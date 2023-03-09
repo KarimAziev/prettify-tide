@@ -137,8 +137,6 @@ Usage:
    (ignore-errors
      (with-temp-buffer
        (erase-buffer)
-       (when (fboundp 'gfm-mode)
-         (gfm-mode))
        (insert result)
        (let ((prev-beg)
              (inhibit-read-only t))
@@ -154,7 +152,8 @@ Usage:
                                  (point))))
                 (save-excursion
                   (when-let ((start (when (re-search-backward
-                                           "^```" nil t 1)
+                                           "^```" nil
+                                           t 1)
                                       (forward-line 1)
                                       (point))))
                     (setq prev-beg (point))
