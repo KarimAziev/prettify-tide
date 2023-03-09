@@ -86,29 +86,46 @@
                                          file))))
                              (or found (executable-find "prettier")))))
                  (with-temp-buffer
-                   (insert string)
-                   (when (eq 0
-                             (apply #'call-process-region
-                                    (append
-                                     (list (point-min)
-                                           (point-max)
-                                           prettier-cmd
-                                           t
-                                           t
-                                           nil))))
-                     (buffer-string))))))
+                   (insert
+                    string)
+                   (let* ((status (call-process-region
+                                   (point-min)
+                                   (point-max)
+                                   "prettier"
+                                   t
+                                   t
+                                   nil
+                                   "--single-quote"
+                                   "--parser" "typescript"))
+                          (formatted (buffer-string)))
+                     (if (zerop status)
+                         formatted
+                       string))))))
     (with-current-buffer buff
       (goto-char beg)
       (delete-region beg
                      end)
-      (insert (with-temp-buffer
+      (insert (save-excursion
+                (forward-line -1)
+                (if (looking-at "```\n")
+                    "\n"
+                  "\n```typescript\n"))
+              (with-temp-buffer
                 (delay-mode-hooks
                   (when (fboundp 'typescript-mode)
                     (typescript-mode))
                   (goto-char (point-min))
                   (insert content)
+                  (indent-region (point-min)
+                                 (point-max))
                   (font-lock-ensure)
-                  (buffer-string))))
+                  (buffer-string)))
+              (save-excursion
+                (goto-char end)
+                (forward-line 1)
+                (if (looking-at "```")
+                    "\n"
+                  "\n```\n")))
       content)))
 
 (defun prettify-tide-prettify (result)
@@ -120,8 +137,11 @@ Usage:
    (ignore-errors
      (with-temp-buffer
        (erase-buffer)
+       (when (fboundp 'gfm-mode)
+         (gfm-mode))
        (insert result)
-       (let ((prev-beg))
+       (let ((prev-beg)
+             (inhibit-read-only t))
          (while
              (or
               (when-let* ((end (when (re-search-backward
@@ -156,9 +176,17 @@ Usage:
          (when (looking-at "[(]")
            (ignore-errors (forward-list 1)
                           (insert "\n")))
-         (prettify-tide-replace-region
-          (point)
-          (line-end-position)))
+         (let* ((beg (point))
+                (end (progn (goto-char (line-end-position))
+                            (if (looking-back "{" 0)
+                                (ignore-errors
+                                  (forward-char -1)
+                                  (forward-list 1)
+                                  (point))
+                              (point)))))
+           (prettify-tide-replace-region
+            beg
+            end)))
        (buffer-string)))
    result))
 
