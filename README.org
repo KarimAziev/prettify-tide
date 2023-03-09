@@ -1,0 +1,47 @@
+* prettify-tide
+
+Run prettier on documentation buffers of [[https://github.com/ananthakumaran/tide][tide]].
+
+** Installation
+
+- Emacs >= 26.1 is required.
+- [[https://prettier.io/][prettier]] (either global or local)
+
+*** Manual
+
+Download the source code and put it wherever you like, e.g. into =~/.emacs.d/prettify-tide/=
+
+#+begin_src shell :eval no
+git clone https://github.com/KarimAziev/prettify-tide.git ~/.emacs.d/prettify-tide/
+#+end_src
+
+Add the downloaded directory to the load path:
+
+#+begin_src elisp :eval no
+(add-to-list 'load-path "~/.emacs.d/prettify-tide/")
+(require 'prettify-tide)
+#+end_src
+
+Add advice to =tide-construct-documentation=.
+#+begin_src elisp :eval no
+(with-eval-after-load 'tide
+  (advice-add 'tide-construct-documentation :filter-return
+              #'prettify-tide-prettify))
+#+end_src
+
+
+*** With use-package and straight.el
+
+#+begin_src elisp :eval no
+(use-package prettify-tide
+  :straight (prettify-tide
+             :repo "KarimAziev/prettify-tide"
+             :type git
+             :host github)
+  :after (tide)
+  :demand t
+  :config
+  (advice-add 'tide-construct-documentation :filter-return
+              #'prettify-tide-prettify))
+#+end_src
+
