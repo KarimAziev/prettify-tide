@@ -25,8 +25,7 @@ Add the downloaded directory to the load path:
 Add advice to =tide-construct-documentation=.
 #+begin_src elisp :eval no
 (with-eval-after-load 'tide
-  (advice-add 'tide-construct-documentation :filter-return
-              #'prettify-tide-prettify))
+  (prettify-tide-add-advice))
 #+end_src
 
 
@@ -41,7 +40,6 @@ Add advice to =tide-construct-documentation=.
   :after (tide)
   :demand t
   :config
-  (advice-add 'tide-construct-documentation :filter-return
-              #'prettify-tide-prettify))
+  (prettify-tide-add-advice))
 #+end_src
 

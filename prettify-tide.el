@@ -107,7 +107,7 @@
                      end)
       (insert (save-excursion
                 (forward-line -1)
-                (if (looking-at "```\n")
+                (if (looking-at "```")
                     "\n"
                   "\n```typescript\n"))
               (with-temp-buffer
@@ -119,13 +119,10 @@
                   (indent-region (point-min)
                                  (point-max))
                   (font-lock-ensure)
-                  (buffer-string)))
-              (save-excursion
-                (goto-char end)
-                (forward-line 1)
-                (if (looking-at "```")
-                    "\n"
-                  "\n```\n")))
+                  (buffer-string))))
+      (skip-chars-forward "\s\t\n")
+      (unless (looking-at "```")
+        (insert "```\n"))
       content)))
 
 (defun prettify-tide-prettify (result)
@@ -137,7 +134,7 @@ Usage:
    (ignore-errors
      (with-temp-buffer
        (erase-buffer)
-       (insert result)
+       (insert (replace-regexp-in-string "```ts" "```typescript" result))
        (let ((prev-beg)
              (inhibit-read-only t))
          (while
@@ -164,6 +161,7 @@ Usage:
                                  nil t 1)))
                 (save-excursion
                   (forward-line 1)
+                  (skip-chars-forward "\s\t\n")
                   (unless (looking-at "```")
                     (prettify-tide-replace-region
                      (point)
@@ -188,6 +186,35 @@ Usage:
             end)))
        (buffer-string)))
    result))
+
+(defun prettify-tide-make-help-buffer (buffer)
+  "Activate `gfm-view-mode' in BUFFER.
+Usage:
+\\=(advice-add \\='tide-make-help-buffer
+ :filter-return \\='prettify-tide-make-help-buffer)."
+  (with-current-buffer buffer
+    (when (fboundp 'gfm-view-mode)
+      (gfm-view-mode)))
+  buffer)
+
+;;;###autoload
+(defun prettify-tide-add-advice ()
+  "Add advice to `tide-construct-documentation' to prettify documentation.
+Also add advice to `tide-make-help-buffer' to use `gfm-view-mode'."
+  (interactive)
+  (advice-add 'tide-construct-documentation :filter-return
+              'prettify-tide-prettify)
+  (advice-add 'tide-make-help-buffer :filter-return
+              'prettify-tide-make-help-buffer))
+
+;;;###autoload
+(defun prettify-tide-remove-advice ()
+  "Remove advice to `tide-construct-documentation' and `tide-make-help-buffer'."
+  (interactive)
+  (advice-remove 'tide-construct-documentation
+                 'prettify-tide-prettify)
+  (advice-remove 'tide-make-help-buffer
+                 'prettify-tide-make-help-buffer))
 
 (provide 'prettify-tide)
 ;;; prettify-tide.el ends here
