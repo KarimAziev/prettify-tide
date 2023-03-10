@@ -160,14 +160,13 @@ Usage:
                                  "^@example\n"
                                  nil t 1)))
                 (save-excursion
-                  (forward-line 1)
-                  (skip-chars-forward "\s\t\n")
-                  (unless (looking-at "```")
+                  (unless (re-search-forward "^```" nil t 1)
+                    (forward-line 1)
+                    (skip-chars-forward "\n")
                     (prettify-tide-replace-region
                      (point)
                      (or prev-beg
-                         (point-max)))
-                    (setq prev-beg start)))))))
+                         (point-max)))))))))
        (unless (= (forward-line -1) -1)
          (goto-char (point-min))
          (when (looking-at "[(]")
