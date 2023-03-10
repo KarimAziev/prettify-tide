@@ -203,18 +203,18 @@ Usage:
 Also add advice to `tide-make-help-buffer' to use `gfm-view-mode'."
   (interactive)
   (advice-add 'tide-construct-documentation :filter-return
-              'prettify-tide-prettify)
+              #'prettify-tide-prettify)
   (advice-add 'tide-make-help-buffer :filter-return
-              'prettify-tide-make-help-buffer))
+              #'prettify-tide-make-help-buffer))
 
 ;;;###autoload
 (defun prettify-tide-remove-advice ()
   "Remove advice to `tide-construct-documentation' and `tide-make-help-buffer'."
   (interactive)
   (advice-remove 'tide-construct-documentation
-                 'prettify-tide-prettify)
+                 #'prettify-tide-prettify)
   (advice-remove 'tide-make-help-buffer
-                 'prettify-tide-make-help-buffer))
+                 #'prettify-tide-make-help-buffer))
 
 (provide 'prettify-tide)
 ;;; prettify-tide.el ends here
