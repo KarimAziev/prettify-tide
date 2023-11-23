@@ -30,7 +30,11 @@
 ;;; Code:
 
 (defun prettify-tide-replace-region (beg end)
-  "Fontify and run prettier on region between BEG and END."
+  "Replace region with formatted TypeScript code.
+
+Argument BEG is the starting position of the region to replace.
+
+Argument END is the ending position of the region to replace."
   (when-let* ((buff (current-buffer))
               (string
                (buffer-substring-no-properties
@@ -112,8 +116,13 @@
                   "\n```typescript\n"))
               (with-temp-buffer
                 (delay-mode-hooks
-                  (when (fboundp 'typescript-mode)
-                    (typescript-mode))
+                  (if (and
+                       (fboundp 'treesit-available-p)
+                       (treesit-available-p)
+                       (fboundp 'typescript-ts-mode))
+                      (typescript-ts-mode)
+                    (when (fboundp 'typescript-mode)
+                      (typescript-mode)))
                   (goto-char (point-min))
                   (insert content)
                   (indent-region (point-min)
@@ -127,9 +136,11 @@
 
 (defun prettify-tide-prettify (result)
   "Prettify RESULT of `tide-construct-documentation'.
+
 Usage:
-\(advice-add =\\'tide-construct-documentation :filter-return
-              #\\'prettify-tide-prettify)"
+
+\\=(advice-add \\='tide-construct-documentation :filter-return
+            #\\='prettify-tide-prettify)"
   (or
    (ignore-errors
      (with-temp-buffer
@@ -139,20 +150,22 @@ Usage:
              (inhibit-read-only t))
          (while
              (or
-              (when-let* ((end (when (re-search-backward
-                                      "^```"
-                                      nil
-                                      t
-                                      1)
-                                 (skip-chars-backward
-                                  "\n")
-                                 (point))))
+              (when-let* ((end
+                           (when (re-search-backward
+                                  "^```"
+                                  nil
+                                  t
+                                  1)
+                             (skip-chars-backward
+                              "\n")
+                             (point))))
                 (save-excursion
-                  (when-let ((start (when (re-search-backward
-                                           "^```" nil
-                                           t 1)
-                                      (forward-line 1)
-                                      (point))))
+                  (when-let ((start
+                              (when (re-search-backward
+                                     "^```" nil
+                                     t 1)
+                                (forward-line 1)
+                                (point))))
                     (setq prev-beg (point))
                     (prettify-tide-replace-region
                      start end))))
@@ -183,23 +196,29 @@ Usage:
            (prettify-tide-replace-region
             beg
             end)))
-       (buffer-string)))
+       (goto-char (point-min))
+       (while (re-search-forward "@[a-z]+" nil t 1)
+         (add-face-text-property (match-beginning 0)
+                                 (match-end 0)
+                                 'font-lock-keyword-face))
+       (string-trim-left
+        (replace-regexp-in-string "^```\\($\\|[^\n]+\\)" ""
+                                  (buffer-string)))))
    result))
 
 (defun prettify-tide-make-help-buffer (buffer)
-  "Activate `gfm-view-mode' in BUFFER.
-Usage:
-\\=(advice-add \\='tide-make-help-buffer
- :filter-return \\='prettify-tide-make-help-buffer)."
+  "Enable `visual-line-mode' in the provided buffer.
+
+Argument BUFFER is the buffer in which to enable `visual-line-mode' if
+available."
   (with-current-buffer buffer
-    (when (fboundp 'gfm-view-mode)
-      (gfm-view-mode)))
+    (when (fboundp 'visual-line-mode)
+      (visual-line-mode 1)))
   buffer)
 
 ;;;###autoload
 (defun prettify-tide-add-advice ()
-  "Add advice to `tide-construct-documentation' to prettify documentation.
-Also add advice to `tide-make-help-buffer' to use `gfm-view-mode'."
+  "Enhance Tide's documentation display."
   (interactive)
   (advice-add 'tide-construct-documentation :filter-return
               #'prettify-tide-prettify)
