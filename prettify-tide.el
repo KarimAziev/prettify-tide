@@ -202,8 +202,11 @@ Usage:
                                  (match-end 0)
                                  'font-lock-keyword-face))
        (string-trim-left
-        (replace-regexp-in-string "^```\\($\\|[^\n]+\\)" ""
-                                  (buffer-string)))))
+        (replace-regexp-in-string "^[\n][\n]+"
+                                  "\n"
+                                  (replace-regexp-in-string
+                                   "^```\\($\\|[^\n]+\\)" ""
+                                   (buffer-string))))))
    result))
 
 (defun prettify-tide-make-help-buffer (buffer)
